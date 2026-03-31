@@ -1,12 +1,22 @@
 package com.hospital.management.controller;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.hospital.management.dto.ApiResponse;
 import com.hospital.management.dto.DoctorRequestDTO;
 import com.hospital.management.dto.DoctorResponseDTO;
 import com.hospital.management.service.DoctorService;
 import com.hospital.management.util.AvailabilityDays;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/doctors")
@@ -18,63 +28,54 @@ public class DoctorController {
 		this.doctorService = doctorService;
 	}
 	
-	// Save Doctor
 	@PostMapping
-	public DoctorResponseDTO saveDoctor(@RequestBody DoctorRequestDTO dto) {
-		return doctorService.saveDoctor(dto);
+	public ResponseEntity<ApiResponse<DoctorResponseDTO>> saveDoctor(@RequestBody DoctorRequestDTO dto) {
+		return new ResponseEntity<>(new ApiResponse<>(HttpStatus.CREATED, doctorService.saveDoctor(dto)), HttpStatus.CREATED);
 	}
 	
-	// Save All Doctors
 	@PostMapping("/bulk")
-	public List<DoctorResponseDTO> saveAllDoctors(@RequestBody List<DoctorRequestDTO> dtos) {
-		return doctorService.saveAllDoctors(dtos);
+	public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> saveAll(@RequestBody List<DoctorRequestDTO> dtos) {
+		return new ResponseEntity<>(new ApiResponse<>(HttpStatus.CREATED, doctorService.saveAllDoctors(dtos)), HttpStatus.CREATED);
 	}
 	
-	// Get All Doctors
 	@GetMapping
-	public List<DoctorResponseDTO> getAllDoctors() {
-		return doctorService.getAllDoctors();
+	public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getAll() {
+		return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK, doctorService.getAllDoctors()));
 	}
 	
-	// Get Doctor By ID
 	@GetMapping("/{id}")
-	public DoctorResponseDTO getDoctorById(@PathVariable Long id) {
-		return doctorService.getDoctorById(id);
+	public ResponseEntity<ApiResponse<DoctorResponseDTO>> getById(@PathVariable Long id) {
+		return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK, doctorService.getDoctorById(id)));
 	}
 	
-	// Delete Doctor
 	@DeleteMapping("/{id}")
-	public void deleteDoctor(@PathVariable Long id) {
+	public ResponseEntity<ApiResponse<String>> delete(@PathVariable Long id) {
 		doctorService.deleteDoctor(id);
+		return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK, "Doctor deleted successfully"));
 	}
 	
-	// Get by Department
 	@GetMapping("/department/{deptId}")
-	public List<DoctorResponseDTO> getByDepartment(@PathVariable Long deptId) {
-		return doctorService.getDoctorsByDepartment(deptId);
+	public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getByDepartment(@PathVariable Long deptId) {
+		return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK, doctorService.getDoctorsByDepartment(deptId)));
 	}
 	
-	// Get by Specialization
 	@GetMapping("/specialization/{spec}")
-	public List<DoctorResponseDTO> getBySpecialization(@PathVariable String spec) {
-		return doctorService.getDoctorsBySpecialization(spec);
+	public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getBySpecialization(@PathVariable String spec) {
+		return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK, doctorService.getDoctorsBySpecialization(spec)));
 	}
 	
-	// Get by Appointment
 	@GetMapping("/appointment/{appointmentId}")
-	public List<DoctorResponseDTO> getByAppointment(@PathVariable Long appointmentId) {
-		return doctorService.getDoctorsByAppointment(appointmentId);
+	public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getByAppointment(@PathVariable Long appointmentId) {
+		return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK, doctorService.getDoctorsByAppointment(appointmentId)));
 	}
 	
-	// Get by Patient
 	@GetMapping("/patient/{patientId}")
-	public List<DoctorResponseDTO> getByPatient(@PathVariable Long patientId) {
-		return doctorService.getDoctorsByPatient(patientId);
+	public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getByPatient(@PathVariable Long patientId) {
+		return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK, doctorService.getDoctorsByPatient(patientId)));
 	}
 	
-	// Get by Availability Day
 	@GetMapping("/availability/{day}")
-	public List<DoctorResponseDTO> getByAvailability(@PathVariable AvailabilityDays day) {
-		return doctorService.getDoctorsByAvailabilityDay(day);
+	public ResponseEntity<ApiResponse<List<DoctorResponseDTO>>> getByAvailability(@PathVariable AvailabilityDays day) {
+		return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK, doctorService.getDoctorsByAvailabilityDay(day)));
 	}
 }

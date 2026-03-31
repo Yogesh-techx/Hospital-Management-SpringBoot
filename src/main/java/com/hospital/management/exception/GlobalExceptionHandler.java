@@ -1,49 +1,75 @@
 package com.hospital.management.exception;
 
+import com.hospital.management.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Collectors;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    // Resource Not Found
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
-        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
-    // Duplicate Resource
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<Map<String, Object>> handleDuplicate(DuplicateResourceException ex) {
-        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
-    // Invalid Operation
-    @ExceptionHandler(InvalidOperationException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalid(InvalidOperationException ex) {
-        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    // Generic Exception (fallback)
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong");
-    }
-
-    // Common response builder
-    private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", status.value());
-        body.put("error", status.getReasonPhrase());
-        body.put("message", message);
-
-        return new ResponseEntity<>(body, status);
-    }
+	
+	// Resource Not Found 404
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+		
+		ApiResponse<Object> response = new ApiResponse<>();
+		response.setStatus(HttpStatus.NOT_FOUND.value());
+		response.setMessage(ex.getMessage());
+		response.setData(null);
+		
+		return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+	}
+	
+	// Duplicate Resource 409
+	@ExceptionHandler(DuplicateResourceException.class)
+	public ResponseEntity<ApiResponse<Object>> handleDuplicateResource(DuplicateResourceException ex) {
+		
+		ApiResponse<Object> response = new ApiResponse<>();
+		response.setStatus(HttpStatus.CONFLICT.value());
+		response.setMessage(ex.getMessage());
+		response.setData(null);
+		
+		return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+	}
+	
+	// Invalid Operation 400
+	@ExceptionHandler(InvalidOperationException.class)
+	public ResponseEntity<ApiResponse<Object>> handleInvalidOperation(InvalidOperationException ex) {
+		
+		ApiResponse<Object> response = new ApiResponse<>();
+		response.setStatus(HttpStatus.BAD_REQUEST.value());
+		response.setMessage(ex.getMessage());
+		response.setData(null);
+		
+		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+	}
+	
+	// Validation Errors (@Valid) 400
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ApiResponse<Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
+		
+		String errorMessage = ex.getBindingResult().getFieldErrors().stream().map(error -> error.getField() + ": " + error.getDefaultMessage()).collect(Collectors.joining(", "));
+		
+		ApiResponse<Object> response = new ApiResponse<>();
+		response.setStatus(HttpStatus.BAD_REQUEST.value());
+		response.setMessage(errorMessage);
+		response.setData(null);
+		
+		return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+	}
+	
+	// Generic Exception 500
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
+		
+		ApiResponse<Object> response = new ApiResponse<>();
+		response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+		response.setMessage("Something went wrong: " + ex.getMessage());
+		response.setData(null);
+		
+		return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+	}
 }
