@@ -1,29 +1,30 @@
 package com.hospital.management.service;
 
-import com.hospital.management.model.Doctor;
-import com.hospital.management.util.AvailabilityDays;
-
 import java.util.List;
+
+import com.hospital.management.dto.DoctorRequestDTO;
+import com.hospital.management.dto.DoctorResponseDTO;
+import com.hospital.management.util.AvailabilityDays;
 
 public interface DoctorService {
 	
-	Doctor saveDoctor(Doctor doctor);
+	DoctorResponseDTO saveDoctor(DoctorRequestDTO dto);
 	
-	List<Doctor> saveAllDoctors(List<Doctor> doctors);
+	List<DoctorResponseDTO> saveAllDoctors(List<DoctorRequestDTO> dtos);
 	
-	List<Doctor> getAllDoctors();
+	List<DoctorResponseDTO> getAllDoctors();
 	
-	Doctor getDoctorById(Long id);
+	DoctorResponseDTO getDoctorById(Long id);
 	
 	void deleteDoctor(Long id);
 	
-	List<Doctor> getDoctorsByDepartment(Long departmentId);
+	List<DoctorResponseDTO> getDoctorsByDepartment(Long departmentId);
 	
-	List<Doctor> getDoctorsBySpecialization(String specialization);
+	List<DoctorResponseDTO> getDoctorsBySpecialization(String specialization);
 	
-	List<Doctor> getDoctorsByAppointment(Long appointmentId);
+	List<DoctorResponseDTO> getDoctorsByAppointment(Long appointmentId);
 	
-	List<Doctor> getDoctorsByPatient(Long patientId);
+	List<DoctorResponseDTO> getDoctorsByPatient(Long patientId);
 	
-	List<Doctor> getDoctorsByAvailabilityDay(AvailabilityDays day);
+	List<DoctorResponseDTO> getDoctorsByAvailabilityDay(AvailabilityDays day);
 }

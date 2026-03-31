@@ -1,5 +1,7 @@
 package com.hospital.management.service.impl;
 
+import com.hospital.management.dto.DepartmentRequestDTO;
+import com.hospital.management.dto.DepartmentResponseDTO;
 import com.hospital.management.exception.DuplicateResourceException;
 import com.hospital.management.exception.InvalidOperationException;
 import com.hospital.management.exception.ResourceNotFoundException;
@@ -10,6 +12,7 @@ import com.hospital.management.service.DepartmentService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class DepartmentServiceImpl implements DepartmentService {
@@ -19,64 +22,81 @@ public class DepartmentServiceImpl implements DepartmentService {
 	
 	public DepartmentServiceImpl(DepartmentRepository departmentRepository, DoctorRepository doctorRepository) {
 		this.departmentRepository = departmentRepository;
-		this.doctorRepository = doctorRepository;	
+		this.doctorRepository = doctorRepository;
 	}
 	
-	// Create Department
-	@Override
-	public Department createDepartment(Department department) {
-		
-		if (departmentRepository.existsByDepartmentName(department.getDepartmentName())) {
-			throw new DuplicateResourceException("Department already exists with name: " + department.getDepartmentName());
-        }
-		
-		return departmentRepository.save(department);
-		
+	// DTO to Entity
+	private Department mapToEntity(DepartmentRequestDTO dto) {
+		Department dept = new Department();
+		dept.setDepartmentName(dto.getDepartmentName());
+		return dept;
 	}
 	
-	// Get All Departments
-	@Override
-	public List<Department> getAllDepartments() {
-		return departmentRepository.findAll();	
+	// Entity to DTO
+	private DepartmentResponseDTO mapToDTO(Department dept) {
+		DepartmentResponseDTO dto = new DepartmentResponseDTO();
+		dto.setDepartmentId(dept.getDepartmentId());
+		dto.setDepartmentName(dept.getDepartmentName());
+		return dto;
 	}
 	
-	// Get Department By ID
+	// Create
 	@Override
-	public Department getDepartmentById(Long id) {
-		return departmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-	}
-	
-	// Get Department By Name
-	@Override
-	public Department getDepartmentByName(String name) {
-		return departmentRepository.findByDepartmentName(name).orElseThrow(() -> new ResourceNotFoundException("Department not found with name: " + name));	
-	}
-	
-	// Update Department
-	@Override
-	public Department updateDepartment(Long id, Department updatedDepartment) {
+	public DepartmentResponseDTO createDepartment(DepartmentRequestDTO dto) {
 		
-		Department existing = getDepartmentById(id);
-		
-		if (!existing.getDepartmentName().equals(updatedDepartment.getDepartmentName()) && departmentRepository.existsByDepartmentName(updatedDepartment.getDepartmentName())) {
-			throw new DuplicateResourceException("Department name already exists: " + updatedDepartment.getDepartmentName());	
+		if (departmentRepository.existsByDepartmentName(dto.getDepartmentName())) {
+			throw new DuplicateResourceException("Department already exists with name: " + dto.getDepartmentName());
 		}
 		
-		existing.setDepartmentName(updatedDepartment.getDepartmentName());
-		
-		return departmentRepository.save(existing);	
+		Department saved = departmentRepository.save(mapToEntity(dto));
+		return mapToDTO(saved);
 	}
 	
-	// Delete Department
+	// Get All
+	@Override
+	public List<DepartmentResponseDTO> getAllDepartments() {
+		return departmentRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
+	}
+	
+	// Get By ID
+	@Override
+	public DepartmentResponseDTO getDepartmentById(Long id) {
+		Department dept = departmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
+		return mapToDTO(dept);
+	}
+	
+	// Get By Name
+	@Override
+	public DepartmentResponseDTO getDepartmentByName(String name) {
+		Department dept = departmentRepository.findByDepartmentName(name).orElseThrow(() -> new ResourceNotFoundException("Department not found with name: " + name));
+		return mapToDTO(dept);
+	}
+	
+	// Update
+	@Override
+	public DepartmentResponseDTO updateDepartment(Long id, DepartmentRequestDTO dto) {
+		
+		Department existing = departmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
+		
+		if (!existing.getDepartmentName().equals(dto.getDepartmentName()) && departmentRepository.existsByDepartmentName(dto.getDepartmentName())) {
+			throw new DuplicateResourceException("Department name already exists: " + dto.getDepartmentName());
+		}
+		
+		existing.setDepartmentName(dto.getDepartmentName());
+		
+		return mapToDTO(departmentRepository.save(existing));
+	}
+	
+	// Delete
 	@Override
 	public void deleteDepartment(Long id) {
 		
-		Department department = getDepartmentById(id);
+		Department dept = departmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
 		
 		if (!doctorRepository.findByDepartment_DepartmentId(id).isEmpty()) {
-			throw new InvalidOperationException("Cannot delete department. Doctors are assigned to it.");	
+			throw new InvalidOperationException("Cannot delete department. Doctors are assigned.");
 		}
 		
-		departmentRepository.delete(department);	
+		departmentRepository.delete(dept);
 	}
 }

@@ -1,115 +1,112 @@
 package com.hospital.management.service.impl;
 
+import com.hospital.management.dto.MedicalRecordRequestDTO;
+import com.hospital.management.dto.MedicalRecordResponseDTO;
 import com.hospital.management.exception.InvalidOperationException;
 import com.hospital.management.exception.ResourceNotFoundException;
 import com.hospital.management.model.Appointment;
-import com.hospital.management.model.Doctor;
 import com.hospital.management.model.MedicalRecord;
-import com.hospital.management.model.Patient;
 import com.hospital.management.repository.AppointmentRepository;
-import com.hospital.management.repository.DoctorRepository;
 import com.hospital.management.repository.MedicalRecordRepository;
-import com.hospital.management.repository.PatientRepository;
 import com.hospital.management.service.MedicalRecordService;
 import com.hospital.management.util.AppointmentStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class MedicalRecordServiceImpl implements MedicalRecordService {
+	
 	private final MedicalRecordRepository medicalRecordRepository;
 	private final AppointmentRepository appointmentRepository;
-	private final DoctorRepository doctorRepository;
-	private final PatientRepository patientRepository;
 	
-	public MedicalRecordServiceImpl(MedicalRecordRepository medicalRecordRepository, AppointmentRepository appointmentRepository, DoctorRepository doctorRepository, PatientRepository patientRepository) {
+	public MedicalRecordServiceImpl(MedicalRecordRepository medicalRecordRepository, AppointmentRepository appointmentRepository) {
 		this.medicalRecordRepository = medicalRecordRepository;
 		this.appointmentRepository = appointmentRepository;
-		this.doctorRepository = doctorRepository;
-		this.patientRepository = patientRepository;
 	}
 	
-	// Create Medical Record
+	// Entity to DTO
+	private MedicalRecordResponseDTO mapToDTO(MedicalRecord record) {
+		
+		MedicalRecordResponseDTO dto = new MedicalRecordResponseDTO();
+		dto.setRecordId(record.getRecordId());
+		dto.setDiagnosis(record.getDiagnosis());
+		dto.setTreatment(record.getTreatment());
+		dto.setVisitingDate(record.getVisitingDate().toString());
+		dto.setDoctorName(record.getDoctor().getDoctorName());
+		dto.setPatientName(record.getPatient().getPatientName());
+		
+		return dto;
+	}
+	
+	// Create Record
 	@Override
-	public MedicalRecord createRecord(MedicalRecord record) {
+	public MedicalRecordResponseDTO createRecord(MedicalRecordRequestDTO dto) {
 		
-		Long appointmentId = record.getAppointment().getAppointmentId();
+		// Fetch appointment
+		Appointment appointment = appointmentRepository.findById(dto.getAppointmentId()).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + dto.getAppointmentId()));
 		
-		// Validate appointment exists
-		Appointment appointment = appointmentRepository.findById(appointmentId).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + appointmentId));
-		
-		// Appointment must be COMPLETED
-		
+		// Must be COMPLETED
 		if (appointment.getStatus() != AppointmentStatus.COMPLETED) {
-			throw new InvalidOperationException("Medical record can only be created for COMPLETED appointments");
+			throw new InvalidOperationException("Medical record can only be created for completed appointments");
 		}
 		
-		// Extract doctor and patient from appointment
-		Doctor doctor = appointment.getDoctor();
-		Patient patient = appointment.getPatient();
-		
-		// Set relationships properly
+		// Create record (IMPORTANT: doctor & patient from appointment)
+		MedicalRecord record = new MedicalRecord();
 		record.setAppointment(appointment);
-		record.setDoctor(doctor);
-		record.setPatient(patient);
-		
-		// Set visiting date (optional: auto-set)
+		record.setDoctor(appointment.getDoctor());
+		record.setPatient(appointment.getPatient());
+		record.setDiagnosis(dto.getDiagnosis());
+		record.setTreatment(dto.getTreatment());
 		record.setVisitingDate(LocalDate.now());
 		
-		return medicalRecordRepository.save(record);
+		return mapToDTO(medicalRecordRepository.save(record));
+	}
+	
+	// Get All
+	@Override
+	public List<MedicalRecordResponseDTO> getAllRecords() {
+		return medicalRecordRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 	
-	// Get All Records
+	// Get By ID
 	@Override
-	public List<MedicalRecord> getAllRecords() {
-		return medicalRecordRepository.findAll();
+	public MedicalRecordResponseDTO getRecordById(Long id) {
+		
+		MedicalRecord record = medicalRecordRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Medical record not found with id: " + id));
+		
+		return mapToDTO(record);
 	}
 	
-	// Get Record By ID
+	// Get by Patient
 	@Override
-	public MedicalRecord getRecordById(Long id) {
-		return medicalRecordRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Medical record not found with id: " + id));
+	public List<MedicalRecordResponseDTO> getRecordsByPatient(Long patientId) {
+		return medicalRecordRepository.findByPatient_PatientId(patientId).stream().map(this::mapToDTO).collect(Collectors.toList());
 	}
 	
-	// Get Records By Patient
+	// Get by Date
 	@Override
-	public List<MedicalRecord> getRecordsByPatient(Long patientId) {
-		
-		if (!patientRepository.existsById(patientId)) {
-			throw new ResourceNotFoundException("Patient not found with id: " + patientId);
-		}
-		
-		return medicalRecordRepository.findByPatient_PatientId(patientId);
+	public List<MedicalRecordResponseDTO> getRecordsByDate(LocalDate date) {
+		return medicalRecordRepository.findByVisitingDate(date).stream().map(this::mapToDTO).collect(Collectors.toList());
 	}
 	
-	// Get Records By Date
+	// Get by Doctor
 	@Override
-	public List<MedicalRecord> getRecordsByDate(LocalDate date) {
-		return medicalRecordRepository.findByVisitingDate(date);
+	public List<MedicalRecordResponseDTO> getRecordsByDoctor(Long doctorId) {
+		return medicalRecordRepository.findByDoctor_DoctorId(doctorId).stream().map(this::mapToDTO).collect(Collectors.toList());
 	}
 	
-	// Get Records By Doctor
+	// Update
 	@Override
-	public List<MedicalRecord> getRecordsByDoctor(Long doctorId) {
+	public MedicalRecordResponseDTO updateRecord(Long id, MedicalRecordRequestDTO dto) {
 		
-		if (!doctorRepository.existsById(doctorId)) {
-			throw new ResourceNotFoundException("Doctor not found with id: " + doctorId);
-		}
+		MedicalRecord existing = medicalRecordRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Medical record not found with id: " + id));
 		
-		return medicalRecordRepository.findByDoctor_DoctorId(doctorId);
-	}
-	
-	// Update Medical Record
-	@Override
-	public MedicalRecord updateRecord(Long id, MedicalRecord updatedRecord) {
+		existing.setDiagnosis(dto.getDiagnosis());
+		existing.setTreatment(dto.getTreatment());
 		
-		MedicalRecord existing = getRecordById(id);
-		existing.setDiagnosis(updatedRecord.getDiagnosis());
-		existing.setTreatment(updatedRecord.getTreatment());
-		existing.setVisitingDate(updatedRecord.getVisitingDate());
-		
-		return medicalRecordRepository.save(existing);
+		return mapToDTO(medicalRecordRepository.save(existing));
 	}
 }

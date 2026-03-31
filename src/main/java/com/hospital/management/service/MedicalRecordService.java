@@ -1,23 +1,24 @@
 package com.hospital.management.service;
 
-import com.hospital.management.model.MedicalRecord;
-
 import java.time.LocalDate;
 import java.util.List;
 
+import com.hospital.management.dto.MedicalRecordRequestDTO;
+import com.hospital.management.dto.MedicalRecordResponseDTO;
+
 public interface MedicalRecordService {
 	
-	MedicalRecord createRecord(MedicalRecord record);
+	MedicalRecordResponseDTO createRecord(MedicalRecordRequestDTO dto);
 	
-	List<MedicalRecord> getAllRecords();
+	List<MedicalRecordResponseDTO> getAllRecords();
 	
-	MedicalRecord getRecordById(Long id);
+	MedicalRecordResponseDTO getRecordById(Long id);
 	
-	List<MedicalRecord> getRecordsByPatient(Long patientId);
+	List<MedicalRecordResponseDTO> getRecordsByPatient(Long patientId);
 	
-	List<MedicalRecord> getRecordsByDate(LocalDate date);
+	List<MedicalRecordResponseDTO> getRecordsByDate(LocalDate date);
 	
-	List<MedicalRecord> getRecordsByDoctor(Long doctorId);
+	List<MedicalRecordResponseDTO> getRecordsByDoctor(Long doctorId);
 	
-	MedicalRecord updateRecord(Long id, MedicalRecord record);
+	MedicalRecordResponseDTO updateRecord(Long id, MedicalRecordRequestDTO dto);
 }

@@ -1,5 +1,7 @@
 package com.hospital.management.service.impl;
 
+import com.hospital.management.dto.PrescriptionRequestDTO;
+import com.hospital.management.dto.PrescriptionResponseDTO;
 import com.hospital.management.exception.InvalidOperationException;
 import com.hospital.management.exception.ResourceNotFoundException;
 import com.hospital.management.model.MedicalRecord;
@@ -11,6 +13,7 @@ import com.hospital.management.service.PrescriptionService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PrescriptionServiceImpl implements PrescriptionService {
@@ -25,52 +28,72 @@ public class PrescriptionServiceImpl implements PrescriptionService {
 		this.patientRepository = patientRepository;
 	}
 	
+	// Entity to DTO
+	private PrescriptionResponseDTO mapToDTO(Prescription prescription) {
+		
+		PrescriptionResponseDTO dto = new PrescriptionResponseDTO();
+		dto.setPrescriptionId(prescription.getPrescriptionId());
+		dto.setMedicine(prescription.getMedicine());
+		dto.setDosageInstructions(prescription.getDosageInstructions());
+		dto.setPatientName(prescription.getMedicalRecord().getPatient().getPatientName());
+		dto.setDoctorName(prescription.getMedicalRecord().getDoctor().getDoctorName());
+		
+		return dto;
+	}
+	
 	// Create Prescription
 	@Override
-	public Prescription createPrescription(Prescription prescription) {
-		
-		Long recordId = prescription.getMedicalRecord().getRecordId();
+	public PrescriptionResponseDTO createPrescription(PrescriptionRequestDTO dto) {
 		
 		// Validate medical record exists
-		MedicalRecord record = medicalRecordRepository.findById(recordId).orElseThrow(() -> new ResourceNotFoundException("Medical record not found with id: " + recordId));
+		MedicalRecord record = medicalRecordRepository.findById(dto.getRecordId()).orElseThrow(() -> new ResourceNotFoundException("Medical record not found with id: " + dto.getRecordId()));
 		
-		// Ensure prescription doesn't already exist
-		if (prescriptionRepository.findByMedicalRecord_RecordId(recordId).isPresent()) {
+		// No duplicate prescription
+		if (prescriptionRepository.findByMedicalRecord_RecordId(dto.getRecordId()).isPresent()) {
 			throw new InvalidOperationException("Prescription already exists for this medical record");
 		}
 		
-		// Set proper relationship
+		// Create entity
+		Prescription prescription = new Prescription();
 		prescription.setMedicalRecord(record);
+		prescription.setMedicine(dto.getMedicine());
+		prescription.setDosageInstructions(dto.getDosageInstructions());
 		
-		return prescriptionRepository.save(prescription);
+		return mapToDTO(prescriptionRepository.save(prescription));
 	}
 	
-	// Get All Prescriptions
+	// Get All
 	@Override
-	public List<Prescription> getAllPrescriptions() {
-		return prescriptionRepository.findAll();
+	public List<PrescriptionResponseDTO> getAllPrescriptions() {
+		return prescriptionRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
 	}
 	
-	// Get Prescription By ID
+	// Get By ID
 	@Override
-	public Prescription getPrescriptionById(Long id) {
-		return prescriptionRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Prescription not found with id: " + id));
+	public PrescriptionResponseDTO getPrescriptionById(Long id) {
+		
+		Prescription prescription = prescriptionRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Prescription not found with id: " + id));
+		
+		return mapToDTO(prescription);
 	}
 	
-	// Get Prescription By Medical Record
+	// Get By Medical Record
 	@Override
-	public Prescription getPrescriptionByMedicalRecord(Long recordId) {
-		return prescriptionRepository.findByMedicalRecord_RecordId(recordId).orElseThrow(() -> new ResourceNotFoundException("Prescription not found for medical record id: " + recordId));
+	public PrescriptionResponseDTO getPrescriptionByMedicalRecord(Long recordId) {
+		
+		Prescription prescription = prescriptionRepository.findByMedicalRecord_RecordId(recordId).orElseThrow(() -> new ResourceNotFoundException("Prescription not found for record id: " + recordId));
+		
+		return mapToDTO(prescription);
 	}
 	
-	// Get Prescriptions By Patient
+	// Get By Patient
 	@Override
-	public List<Prescription> getPrescriptionsByPatient(Long patientId) {
+	public List<PrescriptionResponseDTO> getPrescriptionsByPatient(Long patientId) {
 		
 		if (!patientRepository.existsById(patientId)) {
 			throw new ResourceNotFoundException("Patient not found with id: " + patientId);
 		}
 		
-		return prescriptionRepository.findByMedicalRecord_Patient_PatientId(patientId);
+		return prescriptionRepository.findByMedicalRecord_Patient_PatientId(patientId).stream().map(this::mapToDTO).collect(Collectors.toList());
 	}
 }

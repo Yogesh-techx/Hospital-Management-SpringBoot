@@ -1,22 +1,23 @@
 package com.hospital.management.service;
 
-import com.hospital.management.model.Patient;
-
 import java.util.List;
+
+import com.hospital.management.dto.PatientRequestDTO;
+import com.hospital.management.dto.PatientResponseDTO;
 
 public interface PatientService {
 	
-	Patient registerPatient(Patient patient);
+	PatientResponseDTO registerPatient(PatientRequestDTO dto);
 	
-	List<Patient> getAllPatients();
+	List<PatientResponseDTO> getAllPatients();
 	
-	Patient getPatientById(Long id);
+	PatientResponseDTO getPatientById(Long id);
 	
-	Patient updatePatient(Long id, Patient patient);
+	PatientResponseDTO updatePatient(Long id, PatientRequestDTO dto);
 	
 	void deletePatient(Long id);
 	
-	Patient getPatientByContact(String contact);
+	PatientResponseDTO getPatientByContact(String contact);
 	
-	List<Patient> getPatientsGreaterThanAge(int age);
+	List<PatientResponseDTO> getPatientsGreaterThanAge(int age);
 }

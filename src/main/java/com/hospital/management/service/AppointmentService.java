@@ -1,6 +1,7 @@
 package com.hospital.management.service;
 
-import com.hospital.management.model.Appointment;
+import com.hospital.management.dto.AppointmentRequestDTO;
+import com.hospital.management.dto.AppointmentResponseDTO;
 import com.hospital.management.util.AppointmentStatus;
 
 import java.time.LocalDate;
@@ -8,21 +9,21 @@ import java.util.List;
 
 public interface AppointmentService {
 	
-	Appointment bookAppointment(Appointment appointment);
+	AppointmentResponseDTO bookAppointment(AppointmentRequestDTO dto);
 	
-	List<Appointment> getAllAppointments();
+	List<AppointmentResponseDTO> getAllAppointments();
 	
-	Appointment getAppointmentById(Long id);
+	AppointmentResponseDTO getAppointmentById(Long id);
 	
-	Appointment cancelAppointment(Long id);
+	AppointmentResponseDTO cancelAppointment(Long id);
 	
-	Appointment updateAppointmentStatus(Long id, AppointmentStatus status);
+	AppointmentResponseDTO updateAppointmentStatus(Long id, AppointmentStatus status);
 	
-	List<Appointment> getAppointmentsByDate(LocalDate date);
+	List<AppointmentResponseDTO> getAppointmentsByDate(LocalDate date);
 	
-	List<Appointment> getAppointmentsByStatus(AppointmentStatus status);
+	List<AppointmentResponseDTO> getAppointmentsByStatus(AppointmentStatus status);
 	
-	List<Appointment> getAppointmentsByPatient(Long patientId);
+	List<AppointmentResponseDTO> getAppointmentsByPatient(Long patientId);
 	
-	List<Appointment> getAppointmentsByDoctor(Long doctorId);
+	List<AppointmentResponseDTO> getAppointmentsByDoctor(Long doctorId);
 }

@@ -1,20 +1,20 @@
 package com.hospital.management.service;
 
-import com.hospital.management.model.Department;
-
+import com.hospital.management.dto.DepartmentRequestDTO;
+import com.hospital.management.dto.DepartmentResponseDTO;
 import java.util.List;
 
 public interface DepartmentService {
 	
-	Department createDepartment(Department department);
+	DepartmentResponseDTO createDepartment(DepartmentRequestDTO dto);
 	
-	List<Department> getAllDepartments();
+	List<DepartmentResponseDTO> getAllDepartments();
 	
-	Department getDepartmentById(Long id);
+	DepartmentResponseDTO getDepartmentById(Long id);
 	
-	Department updateDepartment(Long id, Department department);
+	DepartmentResponseDTO updateDepartment(Long id, DepartmentRequestDTO dto);
 	
 	void deleteDepartment(Long id);
 	
-	Department getDepartmentByName(String name);
+	DepartmentResponseDTO getDepartmentByName(String name);
 }

@@ -1,18 +1,19 @@
 package com.hospital.management.service;
 
-import com.hospital.management.model.Prescription;
-
 import java.util.List;
+
+import com.hospital.management.dto.PrescriptionRequestDTO;
+import com.hospital.management.dto.PrescriptionResponseDTO;
 
 public interface PrescriptionService {
 	
-	Prescription createPrescription(Prescription prescription);
+	PrescriptionResponseDTO createPrescription(PrescriptionRequestDTO dto);
 	
-	List<Prescription> getAllPrescriptions();
+	List<PrescriptionResponseDTO> getAllPrescriptions();
 	
-	Prescription getPrescriptionById(Long id);
+	PrescriptionResponseDTO getPrescriptionById(Long id);
 	
-	Prescription getPrescriptionByMedicalRecord(Long recordId);
+	PrescriptionResponseDTO getPrescriptionByMedicalRecord(Long recordId);
 	
-	List<Prescription> getPrescriptionsByPatient(Long patientId);
+	List<PrescriptionResponseDTO> getPrescriptionsByPatient(Long patientId);
 }

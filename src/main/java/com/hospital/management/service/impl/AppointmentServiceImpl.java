@@ -1,5 +1,7 @@
 package com.hospital.management.service.impl;
 
+import com.hospital.management.dto.AppointmentRequestDTO;
+import com.hospital.management.dto.AppointmentResponseDTO;
 import com.hospital.management.exception.InvalidOperationException;
 import com.hospital.management.exception.ResourceNotFoundException;
 import com.hospital.management.model.Appointment;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AppointmentServiceImpl implements AppointmentService {
@@ -29,111 +32,122 @@ public class AppointmentServiceImpl implements AppointmentService {
 		this.patientRepository = patientRepository;
 	}
 	
+	// Entity to DTO
+	private AppointmentResponseDTO mapToDTO(Appointment appointment) {
+		
+		AppointmentResponseDTO dto = new AppointmentResponseDTO();
+		dto.setAppointmentId(appointment.getAppointmentId());
+		dto.setDoctorName(appointment.getDoctor().getDoctorName());
+		dto.setPatientName(appointment.getPatient().getPatientName());
+		dto.setAppointmentDateTime(appointment.getAppointmentDateTime().toString());
+		dto.setStatus(appointment.getStatus().name());
+		
+		return dto;
+	}
+	
 	// Book Appointment
 	@Override
-	public Appointment bookAppointment(Appointment appointment) {
+	public AppointmentResponseDTO bookAppointment(AppointmentRequestDTO dto) {
 		
-		Long doctorId = appointment.getDoctor().getDoctorId();
-		Long patientId = appointment.getPatient().getPatientId();
-		LocalDateTime dateTime = appointment.getAppointmentDateTime();
+		// Fetch doctor
+		Doctor doctor = doctorRepository.findById(dto.getDoctorId()).orElseThrow(() -> new ResourceNotFoundException("Doctor not found with id: " + dto.getDoctorId()));
 		
-		// Validate doctor exists
-		Doctor doctor = doctorRepository.findById(doctorId).orElseThrow(() -> new ResourceNotFoundException("Doctor not found with id: " + doctorId));
+		// Fetch patient
+		Patient patient = patientRepository.findById(dto.getPatientId()).orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + dto.getPatientId()));
 		
-		// Validate patient exists
-		Patient patient = patientRepository.findById(patientId).orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
+		// Convert String → LocalDateTime
+		LocalDateTime dateTime = LocalDateTime.parse(dto.getAppointmentDateTime());
 		
-		// Doctor cannot have 2 appointments at same time
-		if (appointmentRepository.existsByDoctor_DoctorIdAndAppointmentDateTime(doctorId, dateTime)) {
-			throw new InvalidOperationException("Doctor already has an appointment at this time");
+		// Doctor conflict
+		if (appointmentRepository.existsByDoctor_DoctorIdAndAppointmentDateTime(doctor.getDoctorId(), dateTime)) {
+			throw new InvalidOperationException("Doctor already has appointment at this time");
 		}
 		
-		// Patient cannot have multiple appointments in same day
+		// Patient same-day restriction
 		LocalDate date = dateTime.toLocalDate();
-		LocalDateTime startOfDay = date.atStartOfDay();
-		LocalDateTime endOfDay = date.atTime(23, 59, 59);
 		
-		if (!appointmentRepository.findByPatient_PatientIdAndAppointmentDateTimeBetween(patientId, startOfDay, endOfDay).isEmpty()) {
-			throw new InvalidOperationException("Patient already has an appointment on this day");
+		if (!appointmentRepository.findByPatient_PatientIdAndAppointmentDateTimeBetween(patient.getPatientId(),date.atStartOfDay(),date.atTime(23, 59, 59)).isEmpty()) {
+			throw new InvalidOperationException("Patient already has appointment on this day");
 		}
 		
-		// Set validated entities
+		// Create entity
+		Appointment appointment = new Appointment();
 		appointment.setDoctor(doctor);
 		appointment.setPatient(patient);
-		
-		// Default status
+		appointment.setAppointmentDateTime(dateTime);
 		appointment.setStatus(AppointmentStatus.BOOKED);
 		
-		return appointmentRepository.save(appointment);
+		return mapToDTO(appointmentRepository.save(appointment));
 	}
 	
-	// Get All Appointments
+	// Get All
 	@Override
-	public List<Appointment> getAllAppointments() {
-		return appointmentRepository.findAll();
+	public List<AppointmentResponseDTO> getAllAppointments() {
+		return appointmentRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
 	}
 	
-	// Get Appointment By ID
+	// Get By ID
 	@Override
-	public Appointment getAppointmentById(Long id) {
-		return appointmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
-	}
-	
-	// Cancel Appointment
-	@Override
-	public Appointment cancelAppointment(Long id) {
+	public AppointmentResponseDTO getAppointmentById(Long id) {
 		
-		Appointment appointment = getAppointmentById(id);
+		Appointment appointment = appointmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+		
+		return mapToDTO(appointment);
+	}
+	
+	// Cancel
+	@Override
+	public AppointmentResponseDTO cancelAppointment(Long id) {
+		
+		Appointment appointment = appointmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
 		
 		appointment.setStatus(AppointmentStatus.CANCELLED);
 		
-		return appointmentRepository.save(appointment);
+		return mapToDTO(appointmentRepository.save(appointment));
 	}
 	
-	// Update Appointment Status
+	// Update Status
 	@Override
-	public Appointment updateAppointmentStatus(Long id, AppointmentStatus status) {
+	public AppointmentResponseDTO updateAppointmentStatus(Long id, AppointmentStatus status) {
 		
-		Appointment appointment = getAppointmentById(id);
+		Appointment appointment = appointmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
 		
 		appointment.setStatus(status);
 		
-		return appointmentRepository.save(appointment);
+		return mapToDTO(appointmentRepository.save(appointment));
 	}
 	
-	// Get Appointments By Date
+	// Get by Date
 	@Override
-	public List<Appointment> getAppointmentsByDate(LocalDate date) {
-		LocalDateTime start = date.atStartOfDay();
-		LocalDateTime end = date.atTime(23, 59, 59);
+	public List<AppointmentResponseDTO> getAppointmentsByDate(LocalDate date) {
+		return appointmentRepository.findByAppointmentDateTimeBetween(date.atStartOfDay(),date.atTime(23, 59, 59)).stream().map(this::mapToDTO).collect(Collectors.toList());
+	}
+	
+	// Get by Status
+	@Override
+	public List<AppointmentResponseDTO> getAppointmentsByStatus(AppointmentStatus status) {
+		return appointmentRepository.findByStatus(status).stream().map(this::mapToDTO).collect(Collectors.toList());
+	}
+	
+	// Get by Patient
+	@Override
+	public List<AppointmentResponseDTO> getAppointmentsByPatient(Long patientId) {
 		
-		return appointmentRepository.findByAppointmentDateTimeBetween(start, end);
-	}
-	
-	// Get Appointments By Status
-	@Override
-	public List<Appointment> getAppointmentsByStatus(AppointmentStatus status) {
-		return appointmentRepository.findByStatus(status);
-	}
-	
-	// Get Appointments By Patient
-	@Override
-	public List<Appointment> getAppointmentsByPatient(Long patientId) {
 		if (!patientRepository.existsById(patientId)) {
-			throw new ResourceNotFoundException("Patient not found with id: " + patientId);
+			throw new ResourceNotFoundException("Patient not found");
 		}
 		
-		return appointmentRepository.findByPatient_PatientId(patientId);
+		return appointmentRepository.findByPatient_PatientId(patientId).stream().map(this::mapToDTO).collect(Collectors.toList());
 	}
 	
-	// Get Appointments By Doctor
+	// Get by Doctor
 	@Override
-	public List<Appointment> getAppointmentsByDoctor(Long doctorId) {
+	public List<AppointmentResponseDTO> getAppointmentsByDoctor(Long doctorId) {
 		
 		if (!doctorRepository.existsById(doctorId)) {
-			throw new ResourceNotFoundException("Doctor not found with id: " + doctorId);
+			throw new ResourceNotFoundException("Doctor not found");
 		}
 		
-		return appointmentRepository.findByDoctor_DoctorId(doctorId);
+		return appointmentRepository.findByDoctor_DoctorId(doctorId).stream().map(this::mapToDTO).collect(Collectors.toList());
 	}
 }
