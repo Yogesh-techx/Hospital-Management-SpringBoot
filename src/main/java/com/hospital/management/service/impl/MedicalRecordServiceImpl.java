@@ -1,7 +1,14 @@
 package com.hospital.management.service.impl;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.hospital.management.dto.MedicalRecordRequestDTO;
 import com.hospital.management.dto.MedicalRecordResponseDTO;
+import com.hospital.management.exception.DuplicateResourceException;
 import com.hospital.management.exception.InvalidOperationException;
 import com.hospital.management.exception.ResourceNotFoundException;
 import com.hospital.management.model.Appointment;
@@ -10,11 +17,6 @@ import com.hospital.management.repository.AppointmentRepository;
 import com.hospital.management.repository.MedicalRecordRepository;
 import com.hospital.management.service.MedicalRecordService;
 import com.hospital.management.util.AppointmentStatus;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class MedicalRecordServiceImpl implements MedicalRecordService {
@@ -51,6 +53,11 @@ public class MedicalRecordServiceImpl implements MedicalRecordService {
 		// Must be COMPLETED
 		if (appointment.getStatus() != AppointmentStatus.COMPLETED) {
 			throw new InvalidOperationException("Medical record can only be created for completed appointments");
+		}
+		
+		// Check if a medical record already exists for this appointment
+		if (medicalRecordRepository.existsByAppointment_AppointmentId(dto.getAppointmentId())) {
+			throw new DuplicateResourceException("Medical record already exists for this appointment");
 		}
 		
 		// Create record (IMPORTANT: doctor & patient from appointment)

@@ -1,7 +1,13 @@
 package com.hospital.management.service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.hospital.management.dto.PrescriptionRequestDTO;
 import com.hospital.management.dto.PrescriptionResponseDTO;
+import com.hospital.management.exception.DuplicateResourceException;
 import com.hospital.management.exception.InvalidOperationException;
 import com.hospital.management.exception.ResourceNotFoundException;
 import com.hospital.management.model.MedicalRecord;
@@ -10,10 +16,6 @@ import com.hospital.management.repository.MedicalRecordRepository;
 import com.hospital.management.repository.PatientRepository;
 import com.hospital.management.repository.PrescriptionRepository;
 import com.hospital.management.service.PrescriptionService;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class PrescriptionServiceImpl implements PrescriptionService {
@@ -51,6 +53,11 @@ public class PrescriptionServiceImpl implements PrescriptionService {
 		// No duplicate prescription
 		if (prescriptionRepository.findByMedicalRecord_RecordId(dto.getRecordId()).isPresent()) {
 			throw new InvalidOperationException("Prescription already exists for this medical record");
+		}
+		
+		// Check if a prescription already exists for this medical record
+		if (prescriptionRepository.existsByMedicalRecord_RecordId(dto.getRecordId())) {
+			throw new DuplicateResourceException("Prescription already exists for this medical record");
 		}
 		
 		// Create entity

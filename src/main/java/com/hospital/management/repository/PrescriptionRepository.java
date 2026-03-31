@@ -13,4 +13,7 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
 	
 	// Get prescriptions by Patient (via MedicalRecord)
 	List<Prescription> findByMedicalRecord_Patient_PatientId(Long patientId);
+	
+	// Checks if a prescription exists for the given medical record ID
+	boolean existsByMedicalRecord_RecordId(Long recordId);
 }

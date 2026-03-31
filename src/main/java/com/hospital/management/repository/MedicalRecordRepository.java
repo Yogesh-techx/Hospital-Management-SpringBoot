@@ -15,4 +15,7 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
 	
 	// Get medical records by doctor
 	List<MedicalRecord> findByDoctor_DoctorId(Long doctorId);
+	
+	// Checks if a medical record exists for the given appointment ID
+	boolean existsByAppointment_AppointmentId(Long appointmentId);
 }
